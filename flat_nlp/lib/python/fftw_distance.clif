@@ -1,0 +1,22 @@
+from "util/task/python/clif.h" import *
+
+from "third_party/absl/python/numpy/span.h" import *
+
+
+from "third_party/flat_nlp/lib/fftw_distance.h":
+
+  namespace `flat`:
+    class StridedFlatDistanceFn:
+      def __init__(self, signal_dim: int, signal_len: int)
+
+      def `Call` as __call__(self, s1: NumpyArray<`double` as float>,
+                                   s2: NumpyArray<`double` as float>) -> `double` as float
+
+
+    class StridedHalfComplexFlatDistanceFn:
+      def __init__(self, signal_dim: int, signal_len: int)
+
+      def `Call` as __call__(self, s1: NumpyArray<`double` as float>,
+                                   s2: NumpyArray<`double` as float>) -> `double` as float
+
+

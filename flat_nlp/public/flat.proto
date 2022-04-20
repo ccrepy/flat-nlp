@@ -1,0 +1,67 @@
+syntax = "proto2";
+
+package flat;
+
+// This message represents a set of queries.
+message QuerySet {
+  message Query {
+    // Identifier of a query, must be unique if provided.
+    optional string id = 1;
+
+    // The query will be tokenized on space.
+    //   The queries are represented as pretokenized string for convenience and
+    //   decoupling the tokenization logic.
+    optional string pretokenized_string = 5;
+
+    // The weight of a query.
+    optional int32 weight = 6 [default = 1];
+
+    // The log probability associated to this query.
+    optional float log_proba = 10;
+
+    // The language model score associated to this query.
+    optional float lm_score = 11;
+  }
+
+  // List of the queries.
+  repeated Query query_list = 1;
+}
+
+// This message defines the config of an encoder.
+message EncoderConfig {
+  // Specification of a pretrained embedding encoder.
+  message PretrainedEmbeddingEncoderConfig {
+    oneof embedding_model {
+      // Path to a pretained model, (bin | gensim | dill | vec) are supported.
+      string fasttext_model_filepath = 1;
+
+      // Address to a remote fasttext embedding, format is `address:model_name`.
+      string fasttext_service_model = 2;
+    }
+
+    // Max vectors to be considered by the encoder.
+    optional int32 n_vector = 5;
+
+    // Normalization to perform on text.
+    optional string normalization_mode = 6;
+
+    // Strategy for oov tokens.
+    optional string oov_strategy = 7;
+  }
+
+  // Specification of an encoder.
+  oneof base_encoder_config {
+    PretrainedEmbeddingEncoderConfig pretrained_embedding_encoder_config = 1;
+    string tf_model_checkpoint = 2;
+    string servomatic_model = 3;
+  }
+
+  // Adapter to use.
+  optional bool adapt_to_hc_output = 10;
+  optional bool adapt_to_strided_output = 11;
+}
+
+// This message contains multiple encoder configs as a mapping.
+message MultiEncoderConfig {
+  map<string, EncoderConfig> available_encoder_config = 1;
+}
