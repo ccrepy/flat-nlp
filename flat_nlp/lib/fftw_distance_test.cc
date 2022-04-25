@@ -18,12 +18,12 @@ std::vector<double> GenerateRandomNdSignal(int signal_dim, int signal_len) {
   return NdSignal;
 }
 
-class FftwNlspDistanceTest : public ::testing::Test {
+class FftwFlatDistanceTest : public ::testing::Test {
  protected:
-  FftwNlspDistanceTest() {}
+  FftwFlatDistanceTest() {}
 };
 
-TEST_F(FftwNlspDistanceTest, NlspDistanceSingleStride) {
+TEST_F(FftwFlatDistanceTest, FlatDistanceSingleStride) {
   StridedFlatDistanceFn distance = StridedFlatDistanceFn(1, 8);
 
   std::array<double, 8> s1{1, 2, 0, 0, 0, 0, 0, 0};
@@ -35,7 +35,7 @@ TEST_F(FftwNlspDistanceTest, NlspDistanceSingleStride) {
   EXPECT_THAT(distance.Call(&s1, &s2), testing::DoubleNear(0.447213, 1e-5));
 }
 
-TEST_F(FftwNlspDistanceTest, NlspDistance) {
+TEST_F(FftwFlatDistanceTest, FlatDistance) {
   StridedFlatDistanceFn distance = StridedFlatDistanceFn(2, 4);
 
   std::array<double, 2 * 4> s1{1, 0, 0, 0, 0, 1, 0, 0};
@@ -47,7 +47,7 @@ TEST_F(FftwNlspDistanceTest, NlspDistance) {
   EXPECT_THAT(distance.Call(&s1, &s2), testing::DoubleNear(0.769496, 1e-5));
 }
 
-void BM_NlspDistance(benchmark::State& state) {
+void BM_FlatDistance(benchmark::State& state) {
   const int signal_dim = state.range(0);
   const int signal_len = state.range(1);
 
@@ -61,13 +61,13 @@ void BM_NlspDistance(benchmark::State& state) {
     distance.Call(&s1, &s2);
   }
 }
-BENCHMARK(BM_NlspDistance)
+BENCHMARK(BM_FlatDistance)
     ->ArgPair(2, 4)
     ->ArgPair(16, 8)
     ->ArgPair(32, 32)
     ->ArgPair(32, 64);
 
-TEST_F(FftwNlspDistanceTest, HalfComplexNlspDistanceSingleStride) {
+TEST_F(FftwFlatDistanceTest, HalfComplexFlatDistanceSingleStride) {
   StridedHalfComplexFlatDistanceFn distance =
       StridedHalfComplexFlatDistanceFn(1, 8);
 
@@ -81,7 +81,7 @@ TEST_F(FftwNlspDistanceTest, HalfComplexNlspDistanceSingleStride) {
               testing::DoubleNear(0.447213, 1e-5));
 }
 
-TEST_F(FftwNlspDistanceTest, HalfComplexNlspDistance) {
+TEST_F(FftwFlatDistanceTest, HalfComplexFlatDistance) {
   StridedHalfComplexFlatDistanceFn distance =
       StridedHalfComplexFlatDistanceFn(2, 4);
 
@@ -95,7 +95,7 @@ TEST_F(FftwNlspDistanceTest, HalfComplexNlspDistance) {
               testing::DoubleNear(0.769496, 1e-5));
 }
 
-void BM_HalfComplexNlspDistance(benchmark::State& state) {
+void BM_HalfComplexFlatDistance(benchmark::State& state) {
   const int signal_dim = state.range(0);
   const int signal_len = state.range(1);
 
@@ -109,7 +109,7 @@ void BM_HalfComplexNlspDistance(benchmark::State& state) {
     distance.Call(&hc_s1, &hc_s2);
   }
 }
-BENCHMARK(BM_HalfComplexNlspDistance)
+BENCHMARK(BM_HalfComplexFlatDistance)
     ->ArgPair(2, 4)
     ->ArgPair(16, 8)
     ->ArgPair(32, 32)

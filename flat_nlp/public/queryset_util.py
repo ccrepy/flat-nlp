@@ -53,8 +53,7 @@ def pretokenize(
 def convert_queryset_to_df(queryset: flat_pb2.QuerySet) -> QuerysetDf:
   """Converts a QuerySet object into a DataFrame.
 
-  The pandas.DataFrame has the same columns as the QuerySet.Query proto plus a
-    tokenized representation of the query string.
+  The pandas.DataFrame has the same columns as the QuerySet.Query proto.
 
   Arguments:
     queryset: QuerySet to convert

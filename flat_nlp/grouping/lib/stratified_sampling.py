@@ -14,8 +14,8 @@
 
 """Stratified sampling.
 
-This library provide a framework to run sampling based on agglomerative
-clustering and Flat distance.
+This library is used for sampling based on agglomerative clustering and Flat
+distance.
 
 The goal is to reduce the size of a dataset while minimizing the linguistic
 coverage loss.

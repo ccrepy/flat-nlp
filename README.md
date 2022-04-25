@@ -7,15 +7,23 @@ considered as trajectories (as opposed as points traditionally).
 
 Modifications compared to the original codebase:
 
-* **`flat_nlp/public/queryset_util.py`** has been modified:
+* **flat_nlp/public/queryset_util.py**: the following definitions could not be opensourced:
 
-  * `build_tokenizer_fn(locale: str) -> _TokenizerFn` could not be opensourced.
+  ```
+  def build_tokenizer_fn(locale: str) -> _TokenizerFn:
+    ...
+  ```
 
-* **`flat_nlp/encoding/encoder_factory.py`** has been modified:
+* **flat_nlp/encoding/encoder_factory.py**: the following definitions could not be opensourced:
 
-  * `_load_pretrained_embedding_encoder(config: flat_pb2.EncoderConfig.PretrainedEmbeddingEncoderConfig) -> encoder_util.Encoder` could not be opensourced.
+  ```
+  def _load_pretrained_embedding_encoder(
+    config: flat_pb2.EncoderConfig.PretrainedEmbeddingEncoderConfig) -> encoder_util.Encoder:
+    ...
+  ```
 
-* **`flat_nlp/encoding/lib/testdata/text8.5.vec`** is not uploaded.
+
+* **flat_nlp/encoding/lib/testdata/text8.5.vec** is not uploaded.
 
 ## Contributing
 
