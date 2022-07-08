@@ -47,6 +47,9 @@ message EncoderConfig {
 
     // Strategy for oov tokens.
     optional string oov_strategy = 7;
+
+    // Null token
+    optional string null_token = 8;
   }
 
   // Specification of an encoder.

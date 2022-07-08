@@ -187,82 +187,39 @@ class PretrainedEmbeddingEncoderTest(parameterized.TestCase):
             ],
         ])
 
-  def test_adapt_with_punc(self, normalization_mode):
+  def test_encode_with_null_token(self, normalization_mode):
     encoder = pretrained_embedding_encoder.PretrainedEmbeddingEncoder(
         test_encoding_util.SIMPLE_EMBEDDING_MODEL,
         4,
+        null_token='d',
         normalization_mode=normalization_mode,
         oov_strategy=None)
+    np.testing.assert_allclose(
+        encoder.call(['a d c']),
+        [
+            [  # "a d c"
+                [1., 0., 0., 0.],
+                [0., 0., 0., 0.],
+                [0., 0., 3., 0.],
+            ],
+        ])
 
-    test_string = 'a b . b.'
-
-    if normalization_mode is None:
-      with self.assertRaisesRegex(KeyError, "('.')|('b.')"):
-        encoder.adapt([test_string])
-
-    if normalization_mode == 'strip_standalone_punc':
-      with self.assertRaisesRegex(KeyError, "'b.'"):
-        encoder.adapt([test_string])
-
-    if normalization_mode == 'strip_any_punc':
-      encoder.adapt([test_string])
-      np.testing.assert_allclose(
-          encoder.call([test_string]),
-          [
-              [  # "a b b"
-                  [1., 0., 0., 0.],
-                  [0., 2., 2., 0.],
-                  [0., 0., 0., 0.],
-              ],
-          ])
-
-  def test_encode_with_punc(self, normalization_mode):
-    embedding_model = test_encoding_util.MockEmbeddingModel(
-        3, {
-            'a': (1, 0, 0),
-            'b': (0, 2, 0),
-            '.': (0, 0, 3),
-            '<a>': (1, 0, 3),
-        })
-
+  def test_encode_with_null_token_in_embedding_model(self, normalization_mode):
     encoder = pretrained_embedding_encoder.PretrainedEmbeddingEncoder(
-        embedding_model,
+        test_encoding_util.SIMPLE_EMBEDDING_MODEL,
         4,
+        null_token='b',
         normalization_mode=normalization_mode,
         oov_strategy=None)
-
-    if normalization_mode is None:
-      np.testing.assert_allclose(
-          encoder.call(['<a> b . b']),
-          [
-              [  # "<a> b . b"
-                  [1., 0., 0., 0.],
-                  [0., 2., 0., 2.],
-                  [3., 0., 3., 0.],
-              ],
-          ])
-
-    if normalization_mode == 'strip_standalone_punc':
-      np.testing.assert_allclose(
-          encoder.call(['<a> b . b']),
-          [
-              [  # "<a> b b"
-                  [1., 0., 0., 0.],
-                  [0., 2., 2., 0.],
-                  [3., 0., 0., 0.],
-              ],
-          ])
-
-    if normalization_mode == 'strip_any_punc':
-      np.testing.assert_allclose(
-          encoder.call(['<a> b . b']),
-          [
-              [  # "a b b"
-                  [1., 0., 0., 0.],
-                  [0., 2., 2., 0.],
-                  [0., 0., 0., 0.],
-              ],
-          ])
+    np.testing.assert_allclose(
+        encoder.call(['a b c']),
+        [
+            [  # "a b c"
+                [1., 0., 0., 0.],
+                [0., 0., 0., 0.],
+                [0., 0., 3., 0.],
+            ],
+        ])
 
   def test_adapt_twice(self, normalization_mode):
     encoder = pretrained_embedding_encoder.PretrainedEmbeddingEncoder(
@@ -349,6 +306,112 @@ class PretrainedEmbeddingEncoderTest(parameterized.TestCase):
           oov_strategy=None)
     except Exception as e:  # pylint: disable=broad-except
       self.fail(e)
+
+
+@parameterized.parameters(
+    (None),
+    ('strip_any_punc'),
+    ('strip_standalone_punc'),
+)
+class PretrainedEmbeddingEncoderWithPunc(parameterized.TestCase):
+
+  def test_adapt_with_punc(self, normalization_mode):
+    encoder = pretrained_embedding_encoder.PretrainedEmbeddingEncoder(
+        test_encoding_util.SIMPLE_EMBEDDING_MODEL,
+        4,
+        normalization_mode=normalization_mode,
+        oov_strategy=None)
+
+    test_string = 'a b . b.'
+
+    if normalization_mode is None:
+      with self.assertRaisesRegex(KeyError, "('.')|('b.')"):
+        encoder.adapt([test_string])
+
+    if normalization_mode == 'strip_standalone_punc':
+      with self.assertRaisesRegex(KeyError, "'b.'"):
+        encoder.adapt([test_string])
+
+    if normalization_mode == 'strip_any_punc':
+      encoder.adapt([test_string])
+      np.testing.assert_allclose(
+          encoder.call([test_string]),
+          [
+              [  # "a b b"
+                  [1., 0., 0., 0.],
+                  [0., 2., 2., 0.],
+                  [0., 0., 0., 0.],
+              ],
+          ])
+
+  def test_encode_with_punc(self, normalization_mode):
+    embedding_model = test_encoding_util.MockEmbeddingModel(
+        3, {
+            'a': (1, 0, 0),
+            'b': (0, 2, 0),
+            '.': (0, 0, 3),
+            '<a>': (1, 0, 3),
+        })
+
+    encoder = pretrained_embedding_encoder.PretrainedEmbeddingEncoder(
+        embedding_model,
+        4,
+        normalization_mode=normalization_mode,
+        oov_strategy=None)
+
+    if normalization_mode is None:
+      np.testing.assert_allclose(
+          encoder.call(['<a> b . b']),
+          [
+              [  # "<a> b . b"
+                  [1., 0., 0., 0.],
+                  [0., 2., 0., 2.],
+                  [3., 0., 3., 0.],
+              ],
+          ])
+
+    if normalization_mode == 'strip_standalone_punc':
+      np.testing.assert_allclose(
+          encoder.call(['<a> b . b']),
+          [
+              [  # "<a> b b"
+                  [1., 0., 0., 0.],
+                  [0., 2., 2., 0.],
+                  [3., 0., 0., 0.],
+              ],
+          ])
+
+    if normalization_mode == 'strip_any_punc':
+      np.testing.assert_allclose(
+          encoder.call(['<a> b . b']),
+          [
+              [  # "a b b"
+                  [1., 0., 0., 0.],
+                  [0., 2., 2., 0.],
+                  [0., 0., 0., 0.],
+              ],
+          ])
+
+  def test_encode(self, normalization_mode):
+    encoder = pretrained_embedding_encoder.PretrainedEmbeddingEncoder(
+        test_encoding_util.SIMPLE_EMBEDDING_MODEL,
+        4,
+        normalization_mode=normalization_mode,
+        oov_strategy=None)
+    np.testing.assert_allclose(
+        encoder.call(['a b', 'c']),
+        [
+            [  # "a b"
+                [1., 0., 0., 0.],
+                [0., 2., 0., 0.],
+                [0., 0., 0., 0.],
+            ],
+            [  # "c"
+                [0., 0., 0., 0.],
+                [0., 0., 0., 0.],
+                [3., 0., 0., 0.],
+            ],
+        ])
 
 
 if __name__ == '__main__':

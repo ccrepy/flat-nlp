@@ -20,7 +20,7 @@ into the associated pretrained word embedding model.
 """
 
 import functools
-from typing import Callable, Union
+from typing import Callable, Union, Optional
 
 import numpy as np
 import tensorflow as tf
@@ -73,6 +73,7 @@ class PretrainedEmbeddingEncoder(
   Attributes:
     embedding_model: the embedding model to use.
     adapt_before_call: automatically include ad adapt(...) step before call(...)
+    null_token: token to override with the null vector
     normalization_mode: text normalization to use.
     oov_strategy: out of vocabulary strategy to use.
     embedding_matrix: precomputed embedding matrix, index 0 and 1 are reserved
@@ -83,6 +84,7 @@ class PretrainedEmbeddingEncoder(
                embedding_model: embedding_util.EmbeddingModel,
                max_sentence_length: int,
                adapt_before_call: bool = True,
+               null_token: Optional[str] = None,
                *,
                normalization_mode: Union[None, str],
                oov_strategy: Union[None, str]):
@@ -96,10 +98,15 @@ class PretrainedEmbeddingEncoder(
         output_mode='int',
         output_sequence_length=max_sentence_length)
 
-    self.embedding_model = embedding_model
+    self.embedding_model = embedding_util.EmbeddingModelOverride(
+        embedding_model, {null_token: np.zeros(
+            (embedding_model.vector_size,))}) if null_token else embedding_model
     self.normalization_mode = normalization_mode
     self.oov_strategy = oov_strategy
+
     self.adapt_before_call = adapt_before_call
+    self.null_token = null_token
+
     self.embedding_matrix = None
 
   @property
@@ -114,7 +121,7 @@ class PretrainedEmbeddingEncoder(
     """Adapts the encoder to a list of pretokenized strings."""
     super(PretrainedEmbeddingEncoder, self).adapt(inputs)
 
-    input_vocabulary = self.get_vocabulary()[2:]
+    input_vocabulary = self.get_vocabulary(include_special_tokens=False)
     input_embeddings = embedding_util.build_embedding_matrix(
         self.embedding_model, input_vocabulary, self.oov_strategy)
     reserved_embeddings = np.zeros((2, self.embedding_model.vector_size))

@@ -15,7 +15,7 @@
 """Utility library for word embeddings."""
 
 import itertools
-from typing import Sequence, Union
+from typing import Mapping, Sequence, Union
 
 import numpy as np
 import typing_extensions
@@ -35,19 +35,50 @@ class EmbeddingModel(typing_extensions.Protocol):
   """
   vector_size: int
 
-  def __getitem__(self, key_list: Sequence[str]) -> np.ndarray:
+  def __getitem__(self, token_list: Sequence[str]) -> np.ndarray:
     ...
 
-  def __contains__(self, key: str) -> bool:
+  def __contains__(self, token: str) -> bool:
     ...
+
+
+class EmbeddingModelOverride:
+  """Wrapper around an embedding model which override some specific tokens."""
+
+  def __init__(self, embedding_model: EmbeddingModel,
+               embedding_override: Mapping[str, np.ndarray]):
+    self.embedding_model = embedding_model
+    self.embedding_override = embedding_override
+
+  @property
+  def vector_size(self) -> int:
+    return self.embedding_model.vector_size
+
+  def __getitem__(self, token_list: Sequence[str]) -> np.ndarray:
+    """Retrieves the vectors from the embedding model, manual keys are overridden."""
+    matrix = build_embedding_matrix(self.embedding_model, token_list, 'ignore')
+    for i, token in enumerate(token_list):
+      if token in self.embedding_override:
+        matrix[i, :] = self.embedding_override[token]
+    return matrix
+
+  def __contains__(self, token: str) -> bool:
+    """Verifies if tokens are in the embedding model or the overridden tokens."""
+    return token in self.embedding_model or token in self.embedding_override
+
+  def contains_bulk(self, token_list: Sequence[str]) -> Sequence[bool]:
+    """Verifies in bulk if tokens are in the embedding model or the overridden tokens."""
+    in_embedding_mask = self.embedding_model.contains_bulk(token_list)  # pytype: disable=attribute-error
+    in_override_mask = [tok in self.embedding_override for tok in token_list]
+    return np.logical_or(in_embedding_mask, in_override_mask)
 
 
 def _has_embedding(embedding_model: EmbeddingModel,
                    token_list: Sequence[str]) -> Sequence[bool]:
   """Checks if an embedding model has a representation for a list of words."""
-  if hasattr(embedding_model, 'contains_bulk'):
-    return embedding_model.contains_bulk(token_list)
-  else:
+  try:
+    return embedding_model.contains_bulk(token_list)  # pytype: disable=attribute-error
+  except AttributeError:
     return [token in embedding_model for token in token_list]
 
 

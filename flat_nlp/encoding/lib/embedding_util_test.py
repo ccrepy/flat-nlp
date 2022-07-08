@@ -24,6 +24,21 @@ from absl.testing import absltest
 
 class EmbeddingUtilTest(absltest.TestCase):
 
+  def test_embedding_wrapper(self):
+    embedding_model = embedding_util.EmbeddingModelOverride(
+        test_encoding_util.SIMPLE_EMBEDDING_MODEL, {'e': [7., 7., 7.]})
+
+    np.testing.assert_allclose(
+        embedding_util.build_embedding_matrix(embedding_model, ['e'], None),
+        [
+            [7., 7., 7.],  #  `e` via override
+        ],
+    )
+
+    self.assertEqual(
+        embedding_util._has_embedding(embedding_model, ['a', 'e', 'f']),
+        [True, True, False])
+
   def test_oov_no_strategy(self):
     np.testing.assert_allclose(
         embedding_util.build_embedding_matrix(
