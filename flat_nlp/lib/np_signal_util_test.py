@@ -79,24 +79,47 @@ class NpSignalUtilTest(absltest.TestCase):
                                   test_signal_util.TEST_RFFT_TENSOR),
         atol=0.01)
 
+  def test_energy(self):
+    np.testing.assert_allclose(
+        np_signal_util.energy(test_signal_util.TEST_TENSOR),
+        [[1., 4.], [5., 25.]])
+    np.testing.assert_allclose(
+        np_signal_util.energy(test_signal_util.TEST_NORMALIZED_TENSOR),
+        [[1., 1.], [1., 1.]], atol=0.01)
+
   def test_rfft_energy(self):
     np.testing.assert_allclose(
-        np.sqrt(
-            np.sum(
-                test_signal_util.TEST_TENSOR * test_signal_util.TEST_TENSOR,
-                axis=2)),
-        np.sqrt(np_signal_util.rfft_energy(test_signal_util.TEST_RFFT_TENSOR)),
-        atol=0.01)
+        np_signal_util.energy(test_signal_util.TEST_TENSOR),
+        np_signal_util.rfft_energy(test_signal_util.TEST_RFFT_TENSOR),
+        atol=0.025)
 
   def test_hc_energy(self):
     np.testing.assert_allclose(
-        np.sqrt(
-            np.sum(
-                test_signal_util.TEST_TENSOR * test_signal_util.TEST_TENSOR,
-                axis=2)),
-        np.sqrt(np_signal_util.hc_energy(test_signal_util.TEST_HC_TENSOR)),
+        np_signal_util.energy(test_signal_util.TEST_TENSOR),
+        np_signal_util.hc_energy(test_signal_util.TEST_HC_TENSOR),
+        atol=0.025)
+
+  def test_normalize_signal(self):
+    np.testing.assert_allclose(
+        np_signal_util.normalize_signal(test_signal_util.TEST_TENSOR),
+        test_signal_util.TEST_NORMALIZED_TENSOR,
         atol=0.01)
 
+  def test_normalize_rfft_signal(self):
+    np.testing.assert_allclose(
+        np.fft.irfft(
+            np_signal_util.normalize_rfft_signal(
+                test_signal_util.TEST_RFFT_TENSOR)),
+        test_signal_util.TEST_NORMALIZED_TENSOR,
+        atol=0.01)
+
+  def test_normalize_hc_signal(self):
+    np.testing.assert_allclose(
+        np_signal_util.ihc(
+            np_signal_util.normalize_hc_signal(
+                test_signal_util.TEST_HC_TENSOR)),
+        test_signal_util.TEST_NORMALIZED_TENSOR,
+        atol=0.01)
 
 if __name__ == '__main__':
   absltest.main()

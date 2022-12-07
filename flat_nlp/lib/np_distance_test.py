@@ -25,8 +25,8 @@ from absl.testing import parameterized
 
 
 @parameterized.parameters(
-    (np_distance._convolve_signal, test_signal_util.TESTSET_SIGNAL_CONVOLUTION),
-    (np_distance._convolve_hc_signal,
+    (np_distance.convolve_signal, test_signal_util.TESTSET_SIGNAL_CONVOLUTION),
+    (np_distance.convolve_hc_signal,
      test_signal_util.TESTSET_HC_SIGNAL_CONVOLUTION),
 )
 class ConvolutionTest(parameterized.TestCase):
@@ -88,8 +88,8 @@ class DistanceTest(parameterized.TestCase):
       (np_distance.hc_flat_distance,
        np_distance.StridedHalfComplexFlatDistanceFn,
        test_signal_util.TESTSET_HC_SIGNAL_DISTANCE),
-  )  # pylint: disable=invalid-name
-  def test_strided_distance(self, distance_fn, StridedDistanceFn, testset):
+  )
+  def test_strided_distance(self, distance_fn, StridedDistanceFn, testset):  # pylint: disable=invalid-name
     strided_distance_fn = StridedDistanceFn(2, 4)
 
     self.assertEqual(

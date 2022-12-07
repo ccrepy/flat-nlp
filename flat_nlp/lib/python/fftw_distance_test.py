@@ -28,8 +28,8 @@ class FftwDistanceTest(parameterized.TestCase):
   @parameterized.parameters(
       (fftw_distance.StridedFlatDistanceFn,),
       (fftw_distance.StridedHalfComplexFlatDistanceFn,),
-  )  # pylint: disable=invalid-name
-  def test_numpy_type(self, FftwDistanceFn):
+  )
+  def test_numpy_type(self, FftwDistanceFn):  # pylint: disable=invalid-name
     distance_fn = FftwDistanceFn(1, 2)
 
     with self.assertRaisesRegex(TypeError, 'expected numpy.double data'):
@@ -55,8 +55,8 @@ class FftwDistanceTest(parameterized.TestCase):
       (fftw_distance.StridedFlatDistanceFn, np_distance.StridedFlatDistanceFn),
       (fftw_distance.StridedHalfComplexFlatDistanceFn,
        np_distance.StridedHalfComplexFlatDistanceFn),
-  )  # pylint: disable=invalid-name
-  def test_flat_distance(self, FftwDistanceFn, NumpyDistanceFn):
+  )
+  def test_flat_distance(self, FftwDistanceFn, NumpyDistanceFn):  # pylint: disable=invalid-name
     signal_dim, signal_len = 4, 8
     distance_fn = FftwDistanceFn(signal_dim, signal_len)
 

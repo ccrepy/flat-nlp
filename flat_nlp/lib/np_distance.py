@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Library for Flat NLP distance numpy implementation."""
+"""Library for Flat NLP distance numpy implementation.
+
+Distances are defined point-wise (as opposed to losses which work at tensor
+level).
+
+Distances do not expect the signals to be energy normalized.
+"""
 
 import dataclasses
 
@@ -21,8 +27,8 @@ import numpy as np
 from flat_nlp.lib import np_signal_util
 
 
-def _convolve_signal(s1: np.ndarray, s2: np.ndarray, *,
-                     flip_s2_along_time: bool, normalize: bool) -> np.ndarray:
+def convolve_signal(s1: np.ndarray, s2: np.ndarray, *,
+                    flip_s2_along_time: bool, normalize: bool) -> np.ndarray:
   """Computes the discrete correlation of 2 Nd signals.
 
     If the second signal is flipped, we perform a circular correlation and not a
@@ -37,21 +43,21 @@ def _convolve_signal(s1: np.ndarray, s2: np.ndarray, *,
   Returns:
     The correlated signal in time domain
   """
-  s2 = np.flip(s2, axis=1) if flip_s2_along_time else s2
-  s_out = np.fft.ifft(
-      np.fft.fft(s1, axis=1) * np.fft.fft(s2, axis=1), axis=1).real
+  s2 = np.flip(s2, axis=-1) if flip_s2_along_time else s2
 
+  s_out = np.fft.ifft(np.fft.fft(s1) * np.fft.fft(s2)).real
   if not normalize:
     return s_out
 
-  energy = np.sqrt(np.power(s1, 2).sum(axis=1) *
-                   np.power(s2, 2).sum(axis=1))[:, np.newaxis]
-  return s_out / energy
+  normalized_power = np.sqrt(np.power(s1, 2).sum(axis=-1) *
+                             np.power(s2, 2).sum(axis=-1))
+
+  return s_out / normalized_power[:, np.newaxis]
 
 
-def _convolve_hc_signal(hc_s1: np.ndarray, hc_s2: np.ndarray, *,
-                        flip_s2_along_time: bool,
-                        normalize: bool) -> np.ndarray:
+def convolve_hc_signal(hc_s1: np.ndarray, hc_s2: np.ndarray, *,
+                       flip_s2_along_time: bool,
+                       normalize: bool) -> np.ndarray:
   """Computes the discrete correlation of 2 Nd signals in halfcomplex format.
 
     If the second signal is flipped, we perform a circular correlation and not a
@@ -76,16 +82,16 @@ def _convolve_hc_signal(hc_s1: np.ndarray, hc_s2: np.ndarray, *,
   if not normalize:
     return t_out[0]
 
-  energy = np.sqrt(
+  normalized_power = np.sqrt(
       np.array(np_signal_util.hc_energy(hc_t1)) *
       np.array(np_signal_util.hc_energy(hc_t2))).T
 
-  return t_out[0] / energy
+  return t_out[0] / normalized_power
 
 
 def flat_distance(s1: np.ndarray, s2: np.ndarray) -> float:
   """Computes flat distance between 2 Nd signal."""
-  convolved_signal = _convolve_signal(
+  convolved_signal = convolve_signal(
       s1, s2, flip_s2_along_time=True, normalize=True)
   peak_correlation = np.average(convolved_signal, axis=0).max()
   return np.sqrt(1. - np.power(min(1., peak_correlation), 2))
@@ -93,7 +99,7 @@ def flat_distance(s1: np.ndarray, s2: np.ndarray) -> float:
 
 def hc_flat_distance(hc_s1: np.ndarray, hc_s2: np.ndarray) -> float:
   """Computes flat distance between 2 Nd signal in halfcomplex format."""
-  convolved_signal = _convolve_hc_signal(
+  convolved_signal = convolve_hc_signal(
       hc_s1, hc_s2, flip_s2_along_time=True, normalize=True)
   peak_correlation = np.average(convolved_signal, axis=0).max()
   return np.sqrt(1. - np.power(min(1., peak_correlation), 2))
