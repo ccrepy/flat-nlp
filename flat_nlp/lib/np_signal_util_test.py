@@ -79,13 +79,35 @@ class NpSignalUtilTest(absltest.TestCase):
                                   test_signal_util.TEST_RFFT_TENSOR),
         atol=0.01)
 
+  def test_normalize_signal_l2(self):
+    np.testing.assert_allclose(
+        np_signal_util.normalize_signal_l2(test_signal_util.TEST_TENSOR), [
+            [
+                [1., 0., 0., 0., 0., 0., 0., 0.],
+                [0., 1., 0., 0., 0., 0., 0., 0.],
+            ],
+            [
+                [1., 1., 0., 0., 0., 0., 0., 0.],
+                [0., 0., 1., 1., 0., 0., 0., 0.],
+            ],
+        ])
+
+  def test_normalize_rfft_signal_l2(self):
+    with self.assertRaises(NotImplementedError):
+      np_signal_util.normalize_rfft_signal_l2(None)
+
+  def test_normalize_hc_signal_l2(self):
+    with self.assertRaises(NotImplementedError):
+      np_signal_util.normalize_hc_signal_l2(None)
+
   def test_energy(self):
     np.testing.assert_allclose(
         np_signal_util.energy(test_signal_util.TEST_TENSOR),
         [[1., 4.], [5., 25.]])
     np.testing.assert_allclose(
-        np_signal_util.energy(test_signal_util.TEST_NORMALIZED_TENSOR),
-        [[1., 1.], [1., 1.]], atol=0.01)
+        np_signal_util.energy(test_signal_util.TEST_ENERGY_NORMALIZED_TENSOR),
+        [[1., 1.], [1., 1.]],
+        atol=0.01)
 
   def test_rfft_energy(self):
     np.testing.assert_allclose(
@@ -99,26 +121,26 @@ class NpSignalUtilTest(absltest.TestCase):
         np_signal_util.hc_energy(test_signal_util.TEST_HC_TENSOR),
         atol=0.025)
 
-  def test_normalize_signal(self):
+  def test_normalize_signal_energy(self):
     np.testing.assert_allclose(
-        np_signal_util.normalize_signal(test_signal_util.TEST_TENSOR),
-        test_signal_util.TEST_NORMALIZED_TENSOR,
+        np_signal_util.normalize_signal_energy(test_signal_util.TEST_TENSOR),
+        test_signal_util.TEST_ENERGY_NORMALIZED_TENSOR,
         atol=0.01)
 
-  def test_normalize_rfft_signal(self):
+  def test_normalize_rfft_signal_energy(self):
     np.testing.assert_allclose(
         np.fft.irfft(
-            np_signal_util.normalize_rfft_signal(
+            np_signal_util.normalize_rfft_signal_energy(
                 test_signal_util.TEST_RFFT_TENSOR)),
-        test_signal_util.TEST_NORMALIZED_TENSOR,
+        test_signal_util.TEST_ENERGY_NORMALIZED_TENSOR,
         atol=0.01)
 
-  def test_normalize_hc_signal(self):
+  def test_normalize_hc_signal_energy(self):
     np.testing.assert_allclose(
         np_signal_util.ihc(
-            np_signal_util.normalize_hc_signal(
+            np_signal_util.normalize_hc_signal_energy(
                 test_signal_util.TEST_HC_TENSOR)),
-        test_signal_util.TEST_NORMALIZED_TENSOR,
+        test_signal_util.TEST_ENERGY_NORMALIZED_TENSOR,
         atol=0.01)
 
 if __name__ == '__main__':

@@ -19,7 +19,6 @@ import numpy as np
 
 from absl.testing import absltest
 from flat_nlp.lib import jax_loss
-from flat_nlp.lib import jax_signal_util
 from flat_nlp.lib import np_distance
 from flat_nlp.lib import test_signal_util
 
@@ -33,7 +32,8 @@ class JaxLossTest(absltest.TestCase):
     np.testing.assert_allclose(
         jax_loss.convolve_tensor(t1, t2)[0],
         np_distance.convolve_signal(
-            t1[0], t2[0], flip_s2_along_time=True, normalize=False))
+            t1[0], t2[0], flip_s2_along_time=True, normalize=True),
+        atol=0.0001)
 
   def test_convolve_same_tensor(self):
     t1 = jnp.array([test_signal_util.TESTSET_SIGNAL_CONVOLUTION.s1])
@@ -41,26 +41,27 @@ class JaxLossTest(absltest.TestCase):
     np.testing.assert_allclose(
         jax_loss.convolve_tensor(t1, t1)[0],
         np_distance.convolve_signal(
-            t1[0], t1[0], flip_s2_along_time=True, normalize=False))
+            t1[0], t1[0], flip_s2_along_time=True, normalize=True))
 
   def test_flat_loss(self):
     s1 = test_signal_util.TESTSET_SIGNAL_DISTANCE.s1
     s2 = test_signal_util.TESTSET_SIGNAL_DISTANCE.s2
     s3 = test_signal_util.TESTSET_SIGNAL_DISTANCE.s3
 
-    t1 = jax_signal_util.normalize_signal(jnp.array([s1, s1, s2]))
-    t2 = jax_signal_util.normalize_signal(jnp.array([s2, s3, s3]))
+    t1 = jnp.array([s1, s1, s2])
+    t2 = jnp.array([s2, s3, s3])
 
     np.testing.assert_allclose(
         jax_loss.flat_loss(t1, t2), [
             np_distance.flat_distance(s1, s2),
             np_distance.flat_distance(s1, s3),
             np_distance.flat_distance(s2, s3),
-        ], atol=0.0001)
+        ],
+        atol=0.0001)
 
   def test_flat_loss_with_epsilon(self):
     s1 = test_signal_util.TESTSET_SIGNAL_DISTANCE.s1
-    t1 = jax_signal_util.normalize_signal(jnp.array([s1]))
+    t1 = jnp.array([s1])
 
     np.testing.assert_equal(jax_loss.flat_loss(t1, t1, epsilon=-.1), [jnp.nan])
 

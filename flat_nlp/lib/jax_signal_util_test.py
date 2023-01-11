@@ -65,12 +65,26 @@ class JaxSignalUtilTest(absltest.TestCase):
 
   def test_hc_itemwise_pdt(self):
     np.testing.assert_allclose(
-        jax_signal_util.hc_itemwise_pdt(
-            test_signal_util.TEST_HC_TENSOR,
-            test_signal_util.TEST_HC_TENSOR),
+        jax_signal_util.hc_itemwise_pdt(test_signal_util.TEST_HC_TENSOR,
+                                        test_signal_util.TEST_HC_TENSOR),
         np_signal_util.hc_itemwise_pdt(test_signal_util.TEST_HC_TENSOR,
                                        test_signal_util.TEST_HC_TENSOR),
         atol=0.0001)
+
+  def test_normalize_signal_l2(self):
+    np.testing.assert_allclose(
+        jax_signal_util.normalize_signal_l2(
+            test_signal_util.TEST_TENSOR, epsilon=1e-6),
+        np_signal_util.normalize_signal_l2(test_signal_util.TEST_TENSOR),
+        atol=0.0001)
+
+  def test_normalize_rfft_signal_l2(self):
+    with self.assertRaises(NotImplementedError):
+      jax_signal_util.normalize_rfft_signal_l2(None)
+
+  def test_normalize_hc_signal_l2(self):
+    with self.assertRaises(NotImplementedError):
+      jax_signal_util.normalize_hc_signal_l2(None)
 
   def test_energy(self):
     np.testing.assert_allclose(
@@ -87,21 +101,48 @@ class JaxSignalUtilTest(absltest.TestCase):
         jax_signal_util.hc_energy(test_signal_util.TEST_HC_TENSOR),
         np_signal_util.hc_energy(test_signal_util.TEST_HC_TENSOR))
 
-  def test_normalize_signal(self):
+  def test_normalize_signal_energy(self):
     np.testing.assert_allclose(
-        jax_signal_util.normalize_signal(test_signal_util.TEST_TENSOR),
-        np_signal_util.normalize_signal(test_signal_util.TEST_TENSOR))
+        jax_signal_util.normalize_signal_energy(test_signal_util.TEST_TENSOR),
+        np_signal_util.normalize_signal_energy(test_signal_util.TEST_TENSOR))
 
-  def test_normalize_rfft_signal(self):
+  def test_normalize_signal_energy_with_epsilon(self):
+    normalized_t = jax_signal_util.normalize_signal_energy(
+        test_signal_util.TEST_TENSOR, epsilon=-1.)
+
+    np.testing.assert_equal(
+        np.unique(np.isfinite(normalized_t), axis=-1),
+        [[[False], [True]], [[True], [True]]])
+
+  def test_normalize_rfft_signal_energy(self):
     np.testing.assert_allclose(
-        jax_signal_util.normalize_rfft_signal(
+        jax_signal_util.normalize_rfft_signal_energy(
             test_signal_util.TEST_RFFT_TENSOR),
-        np_signal_util.normalize_rfft_signal(test_signal_util.TEST_RFFT_TENSOR))
+        np_signal_util.normalize_rfft_signal_energy(
+            test_signal_util.TEST_RFFT_TENSOR))
 
-  def test_normalize_hc_signal(self):
+  def test_normalize_rfft_signal_energy_with_epsilon(self):
+    normalized_t = jax_signal_util.normalize_rfft_signal_energy(
+        test_signal_util.TEST_RFFT_TENSOR, epsilon=-1.)
+
+    np.testing.assert_equal(
+        np.unique(np.isfinite(normalized_t), axis=-1),
+        [[[False], [True]], [[True], [True]]])
+
+  def test_normalize_hc_signal_energy(self):
     np.testing.assert_allclose(
-        jax_signal_util.normalize_hc_signal(test_signal_util.TEST_HC_TENSOR),
-        np_signal_util.normalize_hc_signal(test_signal_util.TEST_HC_TENSOR))
+        jax_signal_util.normalize_hc_signal_energy(
+            test_signal_util.TEST_HC_TENSOR),
+        np_signal_util.normalize_hc_signal_energy(
+            test_signal_util.TEST_HC_TENSOR))
+
+  def test_normalize_hc_signal_energy_with_epsilon(self):
+    normalized_t = jax_signal_util.normalize_hc_signal_energy(
+        test_signal_util.TEST_HC_TENSOR, epsilon=-1.)
+
+    np.testing.assert_equal(
+        np.unique(np.isfinite(normalized_t), axis=-1),
+        [[[False], [True]], [[True], [True]]])
 
 if __name__ == '__main__':
   absltest.main()

@@ -137,6 +137,22 @@ def hc_itemwise_pdt(hc_t1: Sequence[_NdSignal],
   return hc_pdt
 
 
+def normalize_signal_l2(t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
+  """Normalizes signal elements by their l2 norm."""
+  norm = np.linalg.norm(t, axis=-2, keepdims=True)
+  return np.nan_to_num(t / norm)
+
+
+def normalize_rfft_signal_l2(t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
+  """Normalizes rfft signal elements by their l2 norm."""
+  raise NotImplementedError
+
+
+def normalize_hc_signal_l2(t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
+  """Normalizes hc signal elements by their l2 norm."""
+  raise NotImplementedError
+
+
 def energy(t: Sequence[_NdSignal]) -> Sequence[Sequence[float]]:
   """Computes the energies of a tensor."""
   return np.power(t, 2).sum(axis=-1)
@@ -179,19 +195,21 @@ def hc_energy(hc_t: Sequence[_NdSignal]) -> Sequence[Sequence[float]]:
   return np.real(h_0 + h_i + h_n) / signal_len
 
 
-def normalize_signal(t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
+def normalize_signal_energy(t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
   """Normalizes a tensor by its energy."""
   normalized_power = np.sqrt(energy(t))
   return t / normalized_power[:, :, np.newaxis]
 
 
-def normalize_rfft_signal(rfft_t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
+def normalize_rfft_signal_energy(
+    rfft_t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
   """Normalizes a rfft tensor by its energy."""
   normalized_power = np.sqrt(rfft_energy(rfft_t))
   return rfft_t / normalized_power[:, :, np.newaxis]
 
 
-def normalize_hc_signal(hc_t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
+def normalize_hc_signal_energy(
+    hc_t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
   """Normalizes a hc tensor by its energy."""
   normalized_power = np.sqrt(hc_energy(hc_t))
   return hc_t / normalized_power[:, :, np.newaxis]

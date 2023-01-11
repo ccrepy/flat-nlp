@@ -16,8 +16,6 @@
 
 Distances are defined point-wise (as opposed to losses which work at tensor
 level).
-
-Distances do not expect the signals to be energy normalized.
 """
 
 import dataclasses
@@ -27,8 +25,8 @@ import numpy as np
 from flat_nlp.lib import np_signal_util
 
 
-def convolve_signal(s1: np.ndarray, s2: np.ndarray, *,
-                    flip_s2_along_time: bool, normalize: bool) -> np.ndarray:
+def convolve_signal(s1: np.ndarray, s2: np.ndarray, *, flip_s2_along_time: bool,
+                    normalize: bool) -> np.ndarray:
   """Computes the discrete correlation of 2 Nd signals.
 
     If the second signal is flipped, we perform a circular correlation and not a
@@ -49,15 +47,14 @@ def convolve_signal(s1: np.ndarray, s2: np.ndarray, *,
   if not normalize:
     return s_out
 
-  normalized_power = np.sqrt(np.power(s1, 2).sum(axis=-1) *
-                             np.power(s2, 2).sum(axis=-1))
+  normalized_power = np.sqrt(
+      np.power(s1, 2).sum(axis=-1) * np.power(s2, 2).sum(axis=-1))
 
   return s_out / normalized_power[:, np.newaxis]
 
 
 def convolve_hc_signal(hc_s1: np.ndarray, hc_s2: np.ndarray, *,
-                       flip_s2_along_time: bool,
-                       normalize: bool) -> np.ndarray:
+                       flip_s2_along_time: bool, normalize: bool) -> np.ndarray:
   """Computes the discrete correlation of 2 Nd signals in halfcomplex format.
 
     If the second signal is flipped, we perform a circular correlation and not a
