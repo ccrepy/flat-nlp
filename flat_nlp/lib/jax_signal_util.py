@@ -134,23 +134,6 @@ def hc_itemwise_pdt(hc_t1, hc_t2):
                          axis=2)
 
 
-def normalize_signal_l2(t: Sequence[_NdSignal],
-                        epsilon: float = 0.) -> Sequence[_NdSignal]:
-  """Normalizes signal elements by their l2 norm."""
-  norm = jnp.sum(jax.lax.square(t), axis=-2, keepdims=True)
-  return jnp.asarray(t * jax.lax.rsqrt(norm + epsilon))
-
-
-def normalize_rfft_signal_l2(t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
-  """Normalizes rfft signal elements by their l2 norm."""
-  raise NotImplementedError
-
-
-def normalize_hc_signal_l2(t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
-  """Normalizes hc signal elements by their l2 norm."""
-  raise NotImplementedError
-
-
 @jax.jit
 def energy(t: Sequence[_NdSignal]) -> Sequence[Sequence[float]]:
   """Computes the energies of a tensor."""
@@ -195,26 +178,3 @@ def hc_energy(hc_t: Sequence[_NdSignal]) -> Sequence[Sequence[float]]:
   h_n = jnp.power(hc_t[:, :, half_len], 2)
   return jnp.real(h_0 + h_i + h_n) / signal_len
 
-
-@jax.jit
-def normalize_signal_energy(t: Sequence[_NdSignal],
-                            epsilon: float = 0.) -> Sequence[_NdSignal]:
-  """Normalizes a tensor by its energy."""
-  normalized_power = jnp.sqrt(energy(t))
-  return t / (normalized_power[:, :, jnp.newaxis] + epsilon)
-
-
-@jax.jit
-def normalize_rfft_signal_energy(rfft_t: Sequence[_NdSignal],
-                                 epsilon: float = 0.) -> Sequence[_NdSignal]:
-  """Normalizes a rfft tensor by its energy."""
-  normalized_power = jnp.sqrt(rfft_energy(rfft_t))
-  return rfft_t / (normalized_power[:, :, jnp.newaxis] + epsilon)
-
-
-@jax.jit
-def normalize_hc_signal_energy(hc_t: Sequence[_NdSignal],
-                               epsilon: float = 0.) -> Sequence[_NdSignal]:
-  """Normalizes a hc tensor by its energy."""
-  normalized_power = jnp.sqrt(hc_energy(hc_t))
-  return hc_t / (normalized_power[:, :, jnp.newaxis] + epsilon)

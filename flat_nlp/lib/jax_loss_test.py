@@ -66,12 +66,38 @@ class JaxLossTest(absltest.TestCase):
     np.testing.assert_equal(jax_loss.flat_loss(t1, t1, epsilon=-.1), [jnp.nan])
 
   def test_convolve_hc_tensor(self):
-    with self.assertRaises(NotImplementedError):
-      jax_loss.convolve_hc_tensor(None, None)
+    t1 = jnp.array([test_signal_util.TESTSET_HC_SIGNAL_CONVOLUTION.s1])
+    t2 = jnp.array([test_signal_util.TESTSET_HC_SIGNAL_CONVOLUTION.s2])
+
+    np.testing.assert_allclose(
+        jax_loss.convolve_hc_tensor(t1, t2),
+        [[[0.0, 0.447214, 0.894427, 0.0]]],
+        atol=0.0001,
+    )
 
   def test_hc_flat_loss(self):
-    with self.assertRaises(NotImplementedError):
-      jax_loss.hc_flat_loss(None, None)
+    hc_s1 = test_signal_util.TESTSET_HC_SIGNAL_DISTANCE.s1
+    hc_s2 = test_signal_util.TESTSET_HC_SIGNAL_DISTANCE.s2
+    hc_s3 = test_signal_util.TESTSET_HC_SIGNAL_DISTANCE.s3
+
+    hc_t1 = jnp.array([hc_s1, hc_s1, hc_s2])
+    hc_t2 = jnp.array([hc_s2, hc_s3, hc_s3])
+
+    np.testing.assert_allclose(
+        jax_loss.hc_flat_loss(hc_t1, hc_t2), [
+            np_distance.hc_flat_distance(hc_s1, hc_s2),
+            np_distance.hc_flat_distance(hc_s1, hc_s3),
+            np_distance.hc_flat_distance(hc_s2, hc_s3),
+        ],
+        atol=0.0001)
+
+  def test_hc_flat_loss_with_epsilon(self):
+    hc_s1 = test_signal_util.TESTSET_HC_SIGNAL_DISTANCE.s1
+    hc_t1 = jnp.array([hc_s1])
+
+    np.testing.assert_equal(
+        jax_loss.hc_flat_loss(hc_t1, hc_t1, epsilon=-0.1), [jnp.nan]
+    )
 
 
 if __name__ == '__main__':

@@ -138,7 +138,7 @@ class PretrainedEmbeddingEncoderTest(parameterized.TestCase):
         normalization_mode=normalization_mode,
         oov_strategy=None)
     with self.assertRaisesRegex(
-        ValueError, 'all the input array dimensions for the '
+        ValueError, 'all the input array dimensions (except )?for the '
         'concatenation axis must match exactly'):
       encoder.call([''])
 
@@ -166,7 +166,7 @@ class PretrainedEmbeddingEncoderTest(parameterized.TestCase):
         normalization_mode=normalization_mode,
         oov_strategy=None)
     with self.assertRaisesRegex(
-        ValueError, 'all the input array dimensions for the '
+        ValueError, 'all the input array dimensions (except )?for the '
         'concatenation axis must match exactly'):
       encoder.call([''])
 
