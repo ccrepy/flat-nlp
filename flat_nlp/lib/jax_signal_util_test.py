@@ -86,6 +86,17 @@ class JaxSignalUtilTest(absltest.TestCase):
         jax_signal_util.hc_energy(test_signal_util.TEST_HC_TENSOR),
         np_signal_util.hc_energy(test_signal_util.TEST_HC_TENSOR))
 
+  def test_hc_low_pass_mask(self):
+    hc_t = test_signal_util.TEST_HC_TENSOR
+    rfft_t = test_signal_util.TEST_RFFT_TENSOR
+
+    for i in range(4):
+      masked_rfft_t = np.array(rfft_t)
+      masked_rfft_t[:, :, i+1:] = 0.
+
+      np.testing.assert_allclose(
+          np.where(jax_signal_util.hc_low_pass_mask(hc_t, i), hc_t, 0.),
+          jax_signal_util.rfft_to_hc(masked_rfft_t))
 
 if __name__ == '__main__':
   absltest.main()

@@ -35,6 +35,19 @@ class JaxUtilTest(absltest.TestCase):
         np.array([[0.267261, 0.534522, 0.801784],
                   [0.455842, 0.569803, 0.683764]]))
 
+  def test_vmap_product(self):
+    np.testing.assert_array_almost_equal(
+        jax_util.vmap_product(
+            lambda a, b: jnp.abs(a - b),
+            jnp.array([1, 2, 3]),
+            jnp.array([1, 2]),
+        ),
+        jnp.array([
+            [0., 1., 2.],
+            [1., 0., 1.],
+        ]),
+    )
+
 
 class JaxPretrainedEmbeddingTest(absltest.TestCase):
 

@@ -178,3 +178,19 @@ def hc_energy(hc_t: Sequence[_NdSignal]) -> Sequence[Sequence[float]]:
   h_n = jnp.power(hc_t[:, :, half_len], 2)
   return jnp.real(h_0 + h_i + h_n) / signal_len
 
+
+@functools.partial(jax.jit, static_argnums=(1,))
+def hc_low_pass_mask(hc_t, cutoff_harmonic: int):
+  """Computes the low pass mask for a hc tensor."""
+  n_signal, signal_dim, signal_len = hc_t.shape
+  half_len = signal_len // 2
+
+  harmonics = jnp.concatenate([
+      jnp.arange(0, half_len + 1),
+      jnp.arange(half_len - 1, 0, -1)
+  ])
+
+  return jnp.tile(
+      harmonics <= cutoff_harmonic,
+      (n_signal, signal_dim, 1),
+  )

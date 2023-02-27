@@ -29,6 +29,18 @@ def l2_normalize(x: jnp.ndarray, epsilon: float = 1e-9) -> jnp.ndarray:
   return jnp.asarray(x * jax.lax.rsqrt(l2_norm + epsilon))
 
 
+def vmap_product(fn, x, y):
+  """Applies a function to the carthesian product of each pairs."""
+  fn_ = jax.vmap(
+      jax.vmap(
+          lambda _x, _y: fn(jnp.array([_x]), jnp.array([_y])),
+          in_axes=(0, None),
+      ),
+      in_axes=(None, 0),
+  )
+  return jnp.squeeze(fn_(x, y), axis=-1)
+
+
 def build_pretrained_embeddings_module(
     adapted_encoder: tf.keras.layers.TextVectorization,
     pretrained_embeddings_model: embedding_util.EmbeddingModel,
@@ -66,9 +78,18 @@ def build_pretrained_embeddings_module(
 
     def lookup(self, x):
       """Lookups l2 normalized vector for tokens."""
+
+      mask = jnp.repeat(
+          (x <= 1)[..., jnp.newaxis],
+          pretrained_embeddings_model.vector_size,
+          axis=-1,
+      )
+
       if self.normalize_embeddings:
-        return l2_normalize(self.embeddings(x))
+        l2_emneddings = l2_normalize(self.embeddings(x))
+        return jnp.where(mask, 0., l2_emneddings)
       else:
-        return self.embeddings(x)
+        raw_embeddings = self.embeddings(x)
+        return jnp.where(mask, 0., raw_embeddings)
 
   return JaxPretrainedEmbedding(normalize_embeddings, immutable_embeddings)
