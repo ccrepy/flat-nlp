@@ -25,8 +25,8 @@ from flat_nlp.lib import jax_signal_util
 
 @jax.jit
 def convolve_signal(
-    s1: jnp.array, s2: jnp.array, epsilon: float = 1e-6
-) -> jnp.array:
+    s1: jnp.ndarray, s2: jnp.ndarray, epsilon: float = 1e-6
+) -> jnp.ndarray:
   """Computes the discrete correlation of 2 Nd signals."""
   s2 = jnp.flip(s2, axis=-1)
   s_out = jnp.fft.ifft(jnp.fft.fft(s1) * jnp.fft.fft(s2)).real
@@ -40,8 +40,8 @@ def convolve_signal(
 
 @jax.jit
 def convolve_hc_signal(
-    hc_s1: jnp.array, hc_s2: jnp.array, epsilon: float = 1e-6
-) -> jnp.array:
+    hc_s1: jnp.ndarray, hc_s2: jnp.ndarray, epsilon: float = 1e-6
+) -> jnp.ndarray:
   """Computes the discrete correlation of 2 Nd signals in halfcomplex format."""
   hc_s2 = jax_signal_util.hc_conjugate(hc_s2)
 
@@ -58,7 +58,7 @@ def convolve_hc_signal(
 
 @jax.jit
 def flat_distance(
-    s1: jnp.array, s2: jnp.array, epsilon: float = 1e-6
+    s1: jnp.ndarray, s2: jnp.ndarray, epsilon: float = 1e-6
 ) -> jnp.float32:
   """Computes flat distance between 2 Nd signals."""
   convolved_signal = convolve_signal(s1, s2, epsilon)
@@ -68,7 +68,7 @@ def flat_distance(
 
 @jax.jit
 def hc_flat_distance(
-    hc_s1: jnp.array, hc_s2: jnp.array, epsilon: float = 1e-6
+    hc_s1: jnp.ndarray, hc_s2: jnp.ndarray, epsilon: float = 1e-6
 ) -> jnp.float32:
   """Computes flat distance between 2 Nd signals."""
   convolved_hc_signal = convolve_hc_signal(hc_s1, hc_s2, epsilon)

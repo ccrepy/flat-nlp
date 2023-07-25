@@ -38,7 +38,7 @@ DFIndex = Sequence[Union[int, str]]
 
 def _select_one_per_cluster(
     clustered_queryset_df: queryset_util.QuerysetDf) -> DFIndex:
-  return clustered_queryset_df.reset_index().groupby('cluster').first()['index']  # pytype: disable=attribute-error  # typed-pandas
+  return clustered_queryset_df.reset_index().groupby('cluster').first()['index']
 
 
 def _cluster_queryset_df(
@@ -90,7 +90,7 @@ def sample_queryset_df(
   Returns:
     the sampled queryset as a dataframe.
   """
-  work_queryset_df = queryset_df.drop_duplicates('pretokenized_string').copy()  # pytype: disable=attribute-error  # typed-pandas
+  work_queryset_df = queryset_df.drop_duplicates('pretokenized_string').copy()
   work_queryset_df['cluster'] = _cluster_queryset_df(encoder, work_queryset_df,
                                                      n_clusters)
 
