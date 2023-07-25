@@ -72,7 +72,7 @@ def convert_queryset_to_df(queryset: flat_pb2.QuerySet) -> QuerysetDf:
           queryset,
           including_default_value_fields=True,
           preserving_proto_field_name=True)['query_list'])
-  return df  # pytype: disable=bad-return-type  # typed-pandas
+  return QuerysetDf(df)
 
 
 def query_str_list(queryset: flat_pb2.QuerySet) -> Sequence[str]:

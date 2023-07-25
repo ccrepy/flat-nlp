@@ -35,7 +35,7 @@ import jax.numpy as jnp
 # pytype: disable=attribute-error
 
 _1dSignal = jnp.ndarray  # pylint: disable=invalid-name
-_NdSignal = Sequence[_1dSignal]
+_NdSignal = jnp.ndarray  # pylint: disable=invalid-name
 
 
 @jax.jit
@@ -108,7 +108,7 @@ def hc_conjugate(hc_s):
 
 
 @jax.jit
-def hc_itemwise_pdt(hc_s1, hc_s2):
+def hc_itemwise_pdt(hc_s1: _NdSignal, hc_s2: _NdSignal) -> _NdSignal:
   """Multiplies 2 hc signals itemwise to perform a convolution in time domain."""
   _, signal_len = hc_s1.shape
   half_len = signal_len // 2
@@ -138,31 +138,14 @@ def hc_itemwise_pdt(hc_s1, hc_s2):
                          axis=-1)
 
 
-def normalize_signal_l2(s: _NdSignal,
-                        epsilon: float = 0.) -> _NdSignal:
-  """Normalizes signal elements by their l2 norm."""
-  norm = jnp.sum(jax.lax.square(s), axis=-1, keepdims=True)  # pytype: disable=wrong-arg-types  # numpy-scalars
-  return jnp.asarray(s * jax.lax.rsqrt(norm + epsilon))
-
-
-def normalize_rfft_signal_l2(s: _NdSignal) -> _NdSignal:
-  """Normalizes rfft signal elements by their l2 norm."""
-  raise NotImplementedError
-
-
-def normalize_hc_signal_l2(s: _NdSignal) -> _NdSignal:
-  """Normalizes hc signal elements by their l2 norm."""
-  raise NotImplementedError
-
-
 @jax.jit
-def energy(s: _NdSignal) -> Sequence[float]:
+def energy(s: _NdSignal) -> jnp.ndarray:
   """Computes the energies of a signal."""
   return jnp.power(s, 2).sum(axis=-1)
 
 
 @jax.jit
-def rfft_energy(rfft_s: _NdSignal) -> Sequence[float]:
+def rfft_energy(rfft_s: _NdSignal) -> jnp.ndarray:
   """Computes the energies of a rfft signal."""
   _, signal_len = rfft_s.shape
   true_len = (signal_len - 1) * 2
@@ -181,7 +164,7 @@ def rfft_energy(rfft_s: _NdSignal) -> Sequence[float]:
 
 
 @jax.jit
-def hc_energy(hc_s: _NdSignal) -> Sequence[float]:
+def hc_energy(hc_s: _NdSignal) -> jnp.ndarray:
   """Computes the energies of a hc signal."""
   _, signal_len = hc_s.shape
   half_len = signal_len // 2

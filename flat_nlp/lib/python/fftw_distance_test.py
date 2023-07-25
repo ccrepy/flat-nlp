@@ -67,7 +67,7 @@ class FftwDistanceTest(parameterized.TestCase):
 
     self.assertAlmostEqual(
         distance_fn(a, b),
-        NumpyDistanceFn(signal_dim, signal_len)(a, b))
+        NumpyDistanceFn(signal_dim, signal_len)(a, b),)
 
 
 if __name__ == '__main__':

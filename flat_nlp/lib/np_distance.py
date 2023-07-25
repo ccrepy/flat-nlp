@@ -24,79 +24,76 @@ import numpy as np
 from flat_nlp.lib import np_signal_util
 
 
-def convolve_signal(s1: np.ndarray, s2: np.ndarray, *, flip_s2_along_time: bool,
-                    normalize: bool) -> np.ndarray:
+def convolve_signal(s1: np.ndarray, s2: np.ndarray) -> np.ndarray:
   """Computes the discrete correlation of 2 Nd signals.
 
-    If the second signal is flipped, we perform a circular correlation and not a
+    The signals are not energy normalized.
+
+    The second signal is flipped, so we perform a circular correlation and not a
     convolution.
 
   Arguments:
     s1: first nd signal to correlate, in time domain
     s2: second nd signal to correlate, in time domain
-    flip_s2_along_time: reverse s2 along the signal length axis
-    normalize: perform a normalized cross correlation or not
 
   Returns:
     The correlated signal in time domain
   """
-  s2 = np.flip(s2, axis=-1) if flip_s2_along_time else s2
-
-  s_out = np.fft.ifft(np.fft.fft(s1) * np.fft.fft(s2)).real
-  if not normalize:
-    return s_out
-
-  normalized_power = np.sqrt(
-      np.power(s1, 2).sum(axis=-1) * np.power(s2, 2).sum(axis=-1))
-
-  return s_out / normalized_power[:, np.newaxis]
+  s2 = np.flip(s2, axis=-1)
+  return np.fft.ifft(np.fft.fft(s1) * np.fft.fft(s2)).real
 
 
-def convolve_hc_signal(hc_s1: np.ndarray, hc_s2: np.ndarray, *,
-                       flip_s2_along_time: bool, normalize: bool) -> np.ndarray:
+def convolve_hc_signal(
+    hc_s1: np.ndarray, hc_s2: np.ndarray
+) -> np_signal_util._NdSignal:
   """Computes the discrete correlation of 2 Nd signals in halfcomplex format.
 
-    If the second signal is flipped, we perform a circular correlation and not a
+    The signals are not energy normalized.
+
+    The second signal is flipped, so we perform a circular correlation and not a
     convolution.
 
   Arguments:
     hc_s1: first nd signal to correlate, in halfcomplex format
     hc_s2: second nd signal to correlate, in halfcomplex format
-    flip_s2_along_time: reverse s2 along the signal length axis using conjugate
-    normalize: perform a normalized cross correlation or not
 
   Returns:
-    The correlated signal in time domain
+    The correlated signal in halfcomplex format.
   """
 
   hc_t1, hc_t2, = np.array([hc_s1]), np.array([hc_s2])
-  hc_t2 = np_signal_util.hc_conjugate(hc_t2) if flip_s2_along_time else hc_t2
+  hc_t2 = np_signal_util.hc_conjugate(hc_t2)
 
   t_out = np_signal_util.ihc(np_signal_util.hc_itemwise_pdt(hc_t1, hc_t2))
-  t_out = np.roll(t_out, -1, axis=-1) if flip_s2_along_time else np.array(t_out)
-
-  if not normalize:
-    return t_out[0]
-
-  normalized_power = np.sqrt(
-      np.array(np_signal_util.hc_energy(hc_t1)) *
-      np.array(np_signal_util.hc_energy(hc_t2))).T
-
-  return t_out[0] / normalized_power
+  t_out = np.roll(t_out, -1, axis=-1)
+  (hc_t_out,) = np_signal_util.hc(t_out)
+  return hc_t_out
 
 
 def flat_distance(s1: np.ndarray, s2: np.ndarray) -> float:
   """Computes flat distance between 2 Nd signal."""
-  convolved_signal = convolve_signal(
-      s1, s2, flip_s2_along_time=True, normalize=True)
+  convolved_signal = convolve_signal(s1, s2)
+
+  signal_energy = np.sqrt(
+      np.power(s1, 2).sum(axis=-1) * np.power(s2, 2).sum(axis=-1)
+  )
+  convolved_signal = convolved_signal / signal_energy[:, np.newaxis]
+
   peak_correlation = np.average(convolved_signal, axis=0).max()
   return np.sqrt(1. - np.power(min(1., peak_correlation), 2))
 
 
 def hc_flat_distance(hc_s1: np.ndarray, hc_s2: np.ndarray) -> float:
   """Computes flat distance between 2 Nd signal in halfcomplex format."""
-  convolved_signal = convolve_hc_signal(
-      hc_s1, hc_s2, flip_s2_along_time=True, normalize=True)
+  convolved_hc_signal = convolve_hc_signal(hc_s1, hc_s2)
+  (convolved_signal,) = np_signal_util.ihc(np.array([convolved_hc_signal]))
+
+  (hc_s1_energy,) = np.array(np_signal_util.hc_energy(np.array([hc_s1])))
+  (hc_s2_energy,) = np.array(np_signal_util.hc_energy(np.array([hc_s2])))
+
+  signal_energy = np.sqrt(hc_s1_energy * hc_s2_energy)
+  convolved_signal = convolved_signal / signal_energy[:, np.newaxis]
+
   peak_correlation = np.average(convolved_signal, axis=0).max()
   return np.sqrt(1. - np.power(min(1., peak_correlation), 2))
 
