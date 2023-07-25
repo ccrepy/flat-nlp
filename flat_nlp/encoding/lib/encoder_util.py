@@ -1,4 +1,4 @@
-# Copyright 2022 Flat NLP Authors.
+# Copyright 2023 Flat NLP Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,8 @@ class Encoder(typing_extensions.Protocol):
 
 
 def build_distance_fn(
-    encoder: Encoder) -> Callable[[np.ndarray, np.ndarray], float]:
+    encoder: Encoder,
+) -> Callable[[np.ndarray, np.ndarray], float]:
   """Builds the correct flat distance for a givne encoder."""
   if not encoder.is_output_hc and not encoder.is_output_strided:
     return np_distance.flat_distance
@@ -57,11 +58,19 @@ def build_distance_fn(
     return np_distance.hc_flat_distance
 
   if not encoder.is_output_hc and encoder.is_output_strided:
-    return fftw_distance.StridedFlatDistanceFn(encoder.vector_size,
-                                               encoder.n_vector)
+    # TODO(b/286807800): numerical instabilities with FFTW when signal_len > 64
+    if encoder.n_vector <= 64:
+      return fftw_distance.StridedFlatDistanceFn(
+          encoder.vector_size, encoder.n_vector
+      )
+    else:
+      return np_distance.StridedFlatDistanceFn(
+          encoder.vector_size, encoder.n_vector
+      )
 
   if encoder.is_output_hc and encoder.is_output_strided:
     return fftw_distance.StridedHalfComplexFlatDistanceFn(
-        encoder.vector_size, encoder.n_vector)
+        encoder.vector_size, encoder.n_vector
+    )
 
   raise NotImplementedError

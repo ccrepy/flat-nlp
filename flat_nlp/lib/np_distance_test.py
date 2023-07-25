@@ -1,4 +1,4 @@
-# Copyright 2022 Flat NLP Authors.
+# Copyright 2023 Flat NLP Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@
 
 """Tests for np_distance."""
 
+# pylint: disable=line-too-long
+
 import numpy as np
-
-from flat_nlp.lib import np_distance
-
-from flat_nlp.lib import test_signal_util
 
 from absl.testing import absltest
 from absl.testing import parameterized
 
+from flat_nlp.lib import np_distance
+from flat_nlp.lib import test_signal_util
+
 
 @parameterized.parameters(
     (np_distance.convolve_signal, test_signal_util.TESTSET_SIGNAL_CONVOLUTION),
-    (np_distance.convolve_hc_signal,
-     test_signal_util.TESTSET_HC_SIGNAL_CONVOLUTION),
+    (np_distance.convolve_hc_signal, test_signal_util.TESTSET_HC_SIGNAL_CONVOLUTION),
 )
 class ConvolutionTest(parameterized.TestCase):
 

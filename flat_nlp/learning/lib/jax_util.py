@@ -1,4 +1,4 @@
-# Copyright 2022 Flat NLP Authors.
+# Copyright 2023 Flat NLP Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,22 +30,23 @@ def l2_normalize(x: jnp.ndarray, epsilon: float = 1e-9) -> jnp.ndarray:
 
 
 def vmap_product(fn, x, y):
-  """Applies a function to the carthesian product of each pairs."""
+  """Applies a function to the cartesian product of each pairs."""
   fn_ = jax.vmap(
       jax.vmap(
-          lambda _x, _y: fn(jnp.array([_x]), jnp.array([_y])),
+          fn,
           in_axes=(0, None),
       ),
       in_axes=(None, 0),
   )
-  return jnp.squeeze(fn_(x, y), axis=-1)
+  return fn_(x, y)
 
 
 def build_pretrained_embeddings_module(
     adapted_encoder: tf.keras.layers.TextVectorization,
     pretrained_embeddings_model: embedding_util.EmbeddingModel,
     normalize_embeddings: bool = False,
-    immutable_embeddings: bool = True,):
+    immutable_embeddings: bool = True,
+    ) -> nn.Module:
   """Builds a Jax module to expose some pretrained embeddings model."""
 
   all_vocabulary = adapted_encoder.get_vocabulary()
@@ -74,7 +75,7 @@ def build_pretrained_embeddings_module(
       embeddings = self.lookup(x)
       if self.immutable_embeddings:
         embeddings = jax.lax.stop_gradient(embeddings)
-      return embeddings.swapaxes(2, 1)
+      return embeddings.swapaxes(-1, -2)
 
     def lookup(self, x):
       """Lookups l2 normalized vector for tokens."""
@@ -86,8 +87,8 @@ def build_pretrained_embeddings_module(
       )
 
       if self.normalize_embeddings:
-        l2_emneddings = l2_normalize(self.embeddings(x))
-        return jnp.where(mask, 0., l2_emneddings)
+        l2_embeddings = l2_normalize(self.embeddings(x))
+        return jnp.where(mask, 0., l2_embeddings)
       else:
         raw_embeddings = self.embeddings(x)
         return jnp.where(mask, 0., raw_embeddings)

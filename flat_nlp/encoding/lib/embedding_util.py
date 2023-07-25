@@ -1,4 +1,4 @@
-# Copyright 2022 Flat NLP Authors.
+# Copyright 2023 Flat NLP Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ class EmbeddingModel(typing_extensions.Protocol):
   optionally, a `contains_bulk(...)` method can be implemented, it is useful for
     remote models.
   """
+
   vector_size: int
 
   def __getitem__(self, token_list: Sequence[str]) -> np.ndarray:
@@ -45,8 +46,11 @@ class EmbeddingModel(typing_extensions.Protocol):
 class EmbeddingModelOverride:
   """Wrapper around an embedding model which override some specific tokens."""
 
-  def __init__(self, embedding_model: EmbeddingModel,
-               embedding_override: Mapping[str, np.ndarray]):
+  def __init__(
+      self,
+      embedding_model: EmbeddingModel,
+      embedding_override: Mapping[str, np.ndarray],
+  ):
     self.embedding_model = embedding_model
     self.embedding_override = embedding_override
 
@@ -73,8 +77,9 @@ class EmbeddingModelOverride:
     return np.logical_or(in_embedding_mask, in_override_mask)
 
 
-def _has_embedding(embedding_model: EmbeddingModel,
-                   token_list: Sequence[str]) -> Sequence[bool]:
+def _has_embedding(
+    embedding_model: EmbeddingModel, token_list: Sequence[str]
+) -> Sequence[bool]:
   """Checks if an embedding model has a representation for a list of words."""
   try:
     return embedding_model.contains_bulk(token_list)  # pytype: disable=attribute-error
@@ -82,9 +87,11 @@ def _has_embedding(embedding_model: EmbeddingModel,
     return [token in embedding_model for token in token_list]
 
 
-def build_embedding_matrix(embedding_model: EmbeddingModel,
-                           requested_token_list: Sequence[str],
-                           oov_strategy: Union[None, str]) -> np.ndarray:
+def build_embedding_matrix(
+    embedding_model: EmbeddingModel,
+    requested_token_list: Sequence[str],
+    oov_strategy: Union[None, str],
+) -> np.ndarray:
   """Extracts embeddings representation as a matrix.
 
   This abstraction standardize the way an PretrainedEmbeddingEncoder query
@@ -110,7 +117,8 @@ def build_embedding_matrix(embedding_model: EmbeddingModel,
   """
 
   embedding_matrix = np.zeros(
-      (len(requested_token_list), embedding_model.vector_size))
+      (len(requested_token_list), embedding_model.vector_size)
+  )
 
   if not bool(oov_strategy):
     return embedding_model[requested_token_list]
@@ -119,16 +127,19 @@ def build_embedding_matrix(embedding_model: EmbeddingModel,
     try:
       return build_embedding_matrix(embedding_model, requested_token_list, None)
     except KeyError:
-      availalble_token_mask = _has_embedding(embedding_model,
-                                             requested_token_list)
+      availalble_token_mask = _has_embedding(
+          embedding_model, requested_token_list
+      )
 
       # Fetch the token embeddings
       available_token_list = list(
-          itertools.compress(requested_token_list, availalble_token_mask))
+          itertools.compress(requested_token_list, availalble_token_mask)
+      )
 
       if available_token_list:
         available_embedding_mapping = dict(
-            zip(available_token_list, embedding_model[available_token_list]))
+            zip(available_token_list, embedding_model[available_token_list])
+        )
       else:
         available_embedding_mapping = {}
 
@@ -143,27 +154,36 @@ def build_embedding_matrix(embedding_model: EmbeddingModel,
     try:
       return build_embedding_matrix(embedding_model, requested_token_list, None)
     except KeyError:
-      availalble_token_mask = _has_embedding(embedding_model,
-                                             requested_token_list)
+      availalble_token_mask = _has_embedding(
+          embedding_model, requested_token_list
+      )
 
       # Fetch the char embeddings
       missing_token_list = itertools.compress(
-          requested_token_list, np.logical_not(availalble_token_mask))
+          requested_token_list, np.logical_not(availalble_token_mask)
+      )
       decomposed_missing_token = list(set(itertools.chain(*missing_token_list)))
       char_embedding_mapping = dict(
           zip(
               decomposed_missing_token,
-              build_embedding_matrix(embedding_model, decomposed_missing_token,
-                                     'ignore')))
+              build_embedding_matrix(
+                  embedding_model, decomposed_missing_token, 'ignore'
+              ),
+          )
+      )
 
       # Fetch the token embeddings
       available_token_list = list(
-          itertools.compress(requested_token_list, availalble_token_mask))
+          itertools.compress(requested_token_list, availalble_token_mask)
+      )
       available_embedding_mapping = dict(
           zip(
               available_token_list,
-              build_embedding_matrix(embedding_model, available_token_list,
-                                     None)))
+              build_embedding_matrix(
+                  embedding_model, available_token_list, None
+              ),
+          )
+      )
 
       # Fill the matrix
       for i, token in enumerate(requested_token_list):
@@ -173,9 +193,11 @@ def build_embedding_matrix(embedding_model: EmbeddingModel,
           # `char_embedding_mapping` is always populated possibly only with 0.
           #   due to 'ignore' mode used above.
           embedding_matrix[i] = np.average(
-              [char_embedding_mapping[c] for c in list(token)], axis=0)
+              [char_embedding_mapping[c] for c in list(token)], axis=0
+          )
 
       return np.ascontiguousarray(embedding_matrix)
 
-  raise NotImplementedError('cannot find the requested oov strategy (%s)' %
-                            oov_strategy)
+  raise NotImplementedError(
+      'cannot find the requested oov strategy (%s)' % oov_strategy
+  )

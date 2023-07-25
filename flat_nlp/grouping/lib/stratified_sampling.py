@@ -1,4 +1,4 @@
-# Copyright 2022 Flat NLP Authors.
+# Copyright 2023 Flat NLP Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ DFIndex = Sequence[Union[int, str]]
 
 def _select_one_per_cluster(
     clustered_queryset_df: queryset_util.QuerysetDf) -> DFIndex:
-  return clustered_queryset_df.reset_index().groupby('cluster').first()['index']
+  return clustered_queryset_df.reset_index().groupby('cluster').first()['index']  # pytype: disable=attribute-error  # typed-pandas
 
 
 def _cluster_queryset_df(
@@ -90,7 +90,7 @@ def sample_queryset_df(
   Returns:
     the sampled queryset as a dataframe.
   """
-  work_queryset_df = queryset_df.drop_duplicates('pretokenized_string').copy()
+  work_queryset_df = queryset_df.drop_duplicates('pretokenized_string').copy()  # pytype: disable=attribute-error  # typed-pandas
   work_queryset_df['cluster'] = _cluster_queryset_df(encoder, work_queryset_df,
                                                      n_clusters)
 

@@ -1,4 +1,4 @@
-# Copyright 2022 Flat NLP Authors.
+# Copyright 2023 Flat NLP Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ def convert_queryset_to_df(queryset: flat_pb2.QuerySet) -> QuerysetDf:
           queryset,
           including_default_value_fields=True,
           preserving_proto_field_name=True)['query_list'])
-  return df
+  return df  # pytype: disable=bad-return-type  # typed-pandas
 
 
 def query_str_list(queryset: flat_pb2.QuerySet) -> Sequence[str]:

@@ -1,4 +1,4 @@
-# Copyright 2022 Flat NLP Authors.
+# Copyright 2023 Flat NLP Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 # limitations under the License.
 
 """Tests for jax_util."""
+
+# pylint: disable=g-complex-comprehension
 
 import jax
 import jax.numpy as jnp
@@ -52,7 +54,7 @@ class JaxUtilTest(absltest.TestCase):
 class JaxPretrainedEmbeddingTest(absltest.TestCase):
 
   def setUp(self):
-    super(JaxPretrainedEmbeddingTest, self).setUp()
+    super().setUp()
 
     # fit to vocabulary
     self.encoder = tf.keras.layers.TextVectorization()
@@ -81,10 +83,14 @@ class JaxPretrainedEmbeddingTest(absltest.TestCase):
         'query c',
     ]).numpy()
 
-    y = self.pretrained_embeddings_module.apply(
-        self.params,
-        encoded_x,
-        method=self.pretrained_embeddings_module.lookup_and_encode)
+    y = [
+        self.pretrained_embeddings_module.apply(
+            self.params,
+            x,
+            method=self.pretrained_embeddings_module.lookup_and_encode,
+        )
+        for x in encoded_x
+    ]
 
     np.testing.assert_array_equal(
         y,

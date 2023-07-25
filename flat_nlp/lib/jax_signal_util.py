@@ -1,4 +1,4 @@
-# Copyright 2022 Flat NLP Authors.
+# Copyright 2023 Flat NLP Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,11 @@
 """Utility library for signal processing with Jax.
 
 This file is the Jax counterpart of np_signal_util.py
+
+Unlike `np_signal_util` the jax implementation are point-wise operations (as
+opposed to batches).
 """
+
 import functools
 
 from typing import Sequence
@@ -23,7 +27,7 @@ from typing import Sequence
 import jax
 import jax.numpy as jnp
 
-# Type aliases here are solely for documentation, `Sequence[_NdSignal]` is
+# Type aliases here are solely for documentation, `_NdSignal` is
 # truly a jnp.ndarray tensor.
 # Hence we disable type hinting for .shape and __get_item__([slice, slice, ...])
 
@@ -35,86 +39,86 @@ _NdSignal = Sequence[_1dSignal]
 
 
 @jax.jit
-def stride_signal(signal_list: Sequence[_NdSignal]) -> Sequence[_1dSignal]:
-  """Strides a sequence of nd signals into a 2d matrix.
+def stride_signal(s: _NdSignal) -> _1dSignal:
+  """Strides a nd signals into a flatten representation.
 
   The matrix is a contigus in memory, np.float64 is equivalent to double in cpp.
 
   Arguments:
-    signal_list: array of Nd signals
+    s: Nd signal to flatten
 
   Returns:
-    The 2d matrix representation of the Nd signals.
+    The flatten Nd signal.
   """
-  n_signal, signal_dim, signal_len = signal_list.shape
-  return signal_list.reshape(n_signal, signal_dim * signal_len)
+  signal_dim, signal_len = s.shape
+  return s.reshape(signal_dim * signal_len)
 
 
 @functools.partial(jax.jit, static_argnums=(1, 2))
-def unstride_signal(strided_signal_list: Sequence[_1dSignal], signal_dim: int,
-                    signal_len: int) -> Sequence[_NdSignal]:
-  """Unstrides a 2d matrix into a sequence of nd signals."""
-  return strided_signal_list.reshape(-1, signal_dim, signal_len)
+def unstride_signal(s_strided: _1dSignal, signal_dim: int,
+                    signal_len: int) -> _NdSignal:
+  """Unstrides a flatten signal into a nd signals."""
+  return s_strided.reshape(signal_dim, signal_len)
 
 
 @jax.jit
-def rfft_to_hc(rfft_t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
-  """Converts a tensor from rfft to hc format."""
-  rev_imag = jnp.flip(jnp.imag(rfft_t)[:, :, 1:-1], axis=-1)
-  return jnp.concatenate([jnp.real(rfft_t), rev_imag], axis=-1)
+def rfft_to_hc(rfft_s: _NdSignal) -> _NdSignal:
+  """Converts a signal from rfft to hc format."""
+  rev_imag = jnp.flip(jnp.imag(rfft_s)[:, 1:-1], axis=-1)
+  return jnp.concatenate([jnp.real(rfft_s), rev_imag], axis=-1)
 
 
 @jax.jit
-def hc_to_rfft(hc_t):
-  """Converts a tensor from hc to rfft format."""
-  _, _, signal_len = hc_t.shape
+def hc_to_rfft(hc_s):
+  """Converts a signal from hc to rfft format."""
+  _, signal_len = hc_s.shape
   half_len = signal_len // 2
 
-  rev_imag = jnp.flip(hc_t[:, :, half_len + 1:], axis=2)
+  rev_imag = jnp.flip(hc_s[:, half_len + 1:], axis=-1)
 
-  return jax.lax.complex(hc_t[:, :, :half_len + 1],
-                         jnp.pad(rev_imag, [[0, 0], [0, 0], [1, 1]]))
+  return jax.lax.complex(hc_s[:, :half_len + 1],
+                         jnp.pad(rev_imag, [[0, 0], [1, 1]]))
 
 
 @jax.jit
-def hc(t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
+def hc(s: _NdSignal) -> _NdSignal:
   """Transforms a time domain signal into half complex."""
-  _, _, signal_len = t.shape
+  _, signal_len = s.shape
   assert signal_len % 2 == 0, 'signal_len must be even'
-  return rfft_to_hc(jnp.fft.rfft(t))
+  return rfft_to_hc(jnp.fft.rfft(s))
 
 
 @jax.jit
-def ihc(hc_t: Sequence[_NdSignal]) -> Sequence[_NdSignal]:
+def ihc(hc_s: _NdSignal) -> _NdSignal:
   """Transforms a half complex signal into the time domain."""
-  return jnp.fft.irfft(hc_to_rfft(hc_t))
+  return jnp.fft.irfft(hc_to_rfft(hc_s))
 
 
 @jax.jit
-def hc_conjugate(hc_t):
-  """Computes the conjugate of a hc tensor."""
-  _, _, signal_len = hc_t.shape
+def hc_conjugate(hc_s):
+  """Computes the conjugate of a hc signal."""
+  _, signal_len = hc_s.shape
   half_len = signal_len // 2
 
   return jnp.concatenate([
-      hc_t[:, :, :half_len + 1],
-      -hc_t[:, :, half_len + 1:],
+      hc_s[:, :half_len + 1],
+      -hc_s[:, half_len + 1:],
   ],
-                         axis=2)
+                         axis=-1)
 
 
 @jax.jit
-def hc_itemwise_pdt(hc_t1, hc_t2):
-  """Multiplies 2 hc tensors itemwise to perform a convolution in time domain."""
-  _, _, signal_len = hc_t1.shape
+def hc_itemwise_pdt(hc_s1, hc_s2):
+  """Multiplies 2 hc signals itemwise to perform a convolution in time domain."""
+  _, signal_len = hc_s1.shape
   half_len = signal_len // 2
 
   # Identify real and imag part of the complex harmonics (IE: 1 <= i < half_len)
-  h_i_hc_t1_real = hc_t1[:, :, 1:half_len]
-  h_i_hc_t1_imag = jnp.flip(hc_t1[:, :, half_len + 1:], axis=2)
+  h_i_hc_s1_real = hc_s1[:, 1:half_len]
+  h_i_hc_s1_imag = jnp.flip(hc_s1[:, half_len + 1:], axis=-1)
 
-  h_i_hc_t2_real = hc_t2[:, :, 1:half_len]
-  h_i_hc_t2_imag = jnp.flip(hc_t2[:, :, half_len + 1:], axis=2)
+  h_i_hc_s2_real = hc_s2[:, 1:half_len]
+  h_i_hc_s2_imag = jnp.flip(hc_s2[:, half_len + 1:], axis=-1)
 
   # Rebuild the signal by parts using hc convention:
   #   [
@@ -124,65 +128,82 @@ def hc_itemwise_pdt(hc_t1, hc_t2):
   #     reversed [ imag part of (a + ib) * (a' + ib'): a * b' + a' * b],
   #   ]
   return jnp.concatenate([
-      hc_t1[:, :, :1] * hc_t2[:, :, :1],
-      h_i_hc_t1_real * h_i_hc_t2_real - h_i_hc_t1_imag * h_i_hc_t2_imag,
-      hc_t1[:, :, half_len:half_len + 1] * hc_t2[:, :, half_len:half_len + 1],
+      hc_s1[:, :1] * hc_s2[:, :1],
+      h_i_hc_s1_real * h_i_hc_s2_real - h_i_hc_s1_imag * h_i_hc_s2_imag,
+      hc_s1[:, half_len:half_len + 1] * hc_s2[:, half_len:half_len + 1],
       jnp.flip(
-          h_i_hc_t1_real * h_i_hc_t2_imag + h_i_hc_t1_imag * h_i_hc_t2_real,
-          axis=2),
+          h_i_hc_s1_real * h_i_hc_s2_imag + h_i_hc_s1_imag * h_i_hc_s2_real,
+          axis=-1),
   ],
-                         axis=2)
+                         axis=-1)
+
+
+def normalize_signal_l2(s: _NdSignal,
+                        epsilon: float = 0.) -> _NdSignal:
+  """Normalizes signal elements by their l2 norm."""
+  norm = jnp.sum(jax.lax.square(s), axis=-1, keepdims=True)  # pytype: disable=wrong-arg-types  # numpy-scalars
+  return jnp.asarray(s * jax.lax.rsqrt(norm + epsilon))
+
+
+def normalize_rfft_signal_l2(s: _NdSignal) -> _NdSignal:
+  """Normalizes rfft signal elements by their l2 norm."""
+  raise NotImplementedError
+
+
+def normalize_hc_signal_l2(s: _NdSignal) -> _NdSignal:
+  """Normalizes hc signal elements by their l2 norm."""
+  raise NotImplementedError
 
 
 @jax.jit
-def energy(t: Sequence[_NdSignal]) -> Sequence[Sequence[float]]:
-  """Computes the energies of a tensor."""
-  return jnp.power(t, 2).sum(axis=-1)
+def energy(s: _NdSignal) -> Sequence[float]:
+  """Computes the energies of a signal."""
+  return jnp.power(s, 2).sum(axis=-1)
 
 
 @jax.jit
-def rfft_energy(rfft_t: Sequence[_NdSignal]) -> Sequence[Sequence[float]]:
-  """Computes the energies of a rfft tensor."""
-  _, _, signal_len = rfft_t.shape
+def rfft_energy(rfft_s: _NdSignal) -> Sequence[float]:
+  """Computes the energies of a rfft signal."""
+  _, signal_len = rfft_s.shape
   true_len = (signal_len - 1) * 2
 
   # Continuous component
-  h_0 = rfft_t[:, :, 0] * jnp.conjugate(rfft_t[:, :, 0])
+  h_0 = rfft_s[:, 0] * jnp.conjugate(rfft_s[:, 0])
 
   # Middle frequencies, they need to be counted twice in the case of rfft
   #   detailed explanation here: https://dsp.stackexchange.com/a/67110
   h_i = 2 * jnp.sum(
-      rfft_t[:, :, 1:-1] * jnp.conjugate(rfft_t[:, :, 1:-1]), axis=2)
+      rfft_s[:, 1:-1] * jnp.conjugate(rfft_s[:, 1:-1]), axis=-1)
 
   # Nyquist frequency
-  h_n = rfft_t[:, :, -1] * jnp.conjugate(rfft_t[:, :, -1])
+  h_n = rfft_s[:, -1] * jnp.conjugate(rfft_s[:, -1])
   return jnp.real(h_0 + h_i + h_n) / true_len
 
 
 @jax.jit
-def hc_energy(hc_t: Sequence[_NdSignal]) -> Sequence[Sequence[float]]:
-  """Computes the energies of a hc tensor."""
-  _, _, signal_len = hc_t.shape
+def hc_energy(hc_s: _NdSignal) -> Sequence[float]:
+  """Computes the energies of a hc signal."""
+  _, signal_len = hc_s.shape
   half_len = signal_len // 2
 
   # Continuous component
-  h_0 = jnp.power(hc_t[:, :, 0], 2)
+  h_0 = jnp.power(hc_s[:, 0], 2)
 
   # Middle frequencies, they need to be counted twice in the case of rfft
   #   detailed explanation here: https://dsp.stackexchange.com/a/67110
-  h_i_real = hc_t[:, :, 1:half_len]
-  h_i_imag = hc_t[:, :, half_len + 1:]  # no need to use jnp.flip
-  h_i = 2 * jnp.sum(jnp.power(h_i_real, 2) + jnp.power(h_i_imag, 2), axis=2)
+  h_i_real = hc_s[:, 1:half_len]
+  h_i_imag = hc_s[:, half_len + 1:]  # no need to use jnp.flip for energy
+  h_i = 2 * jnp.sum(jnp.power(h_i_real, 2) + jnp.power(h_i_imag, 2), axis=-1)
 
   # Nyquist frequency
-  h_n = jnp.power(hc_t[:, :, half_len], 2)
+  h_n = jnp.power(hc_s[:, half_len], 2)
   return jnp.real(h_0 + h_i + h_n) / signal_len
 
 
 @functools.partial(jax.jit, static_argnums=(1,))
-def hc_low_pass_mask(hc_t, cutoff_harmonic: int):
-  """Computes the low pass mask for a hc tensor."""
-  n_signal, signal_dim, signal_len = hc_t.shape
+def hc_low_pass_mask(hc_s, cutoff_harmonic: int):
+  """Computes the low pass mask for a hc signla."""
+  signal_dim, signal_len = hc_s.shape
   half_len = signal_len // 2
 
   harmonics = jnp.concatenate([
@@ -192,5 +213,5 @@ def hc_low_pass_mask(hc_t, cutoff_harmonic: int):
 
   return jnp.tile(
       harmonics <= cutoff_harmonic,
-      (n_signal, signal_dim, 1),
+      (signal_dim, 1),
   )

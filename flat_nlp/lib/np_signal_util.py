@@ -1,4 +1,4 @@
-# Copyright 2022 Flat NLP Authors.
+# Copyright 2023 Flat NLP Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,6 +33,10 @@ assumptions:
 
 """
 
+# pytype: disable=unsupported-operands
+# pytype: disable=attribute-error
+# pylint: disable=line-too-long
+
 from typing import Sequence
 
 import numpy as np
@@ -40,9 +44,6 @@ import numpy as np
 # Type aliases here are solely for documentation, `Sequence[_NdSignal]` is
 # truly a np.ndarray tensor.
 # Hence we disable type hinting for .shape and __get_item__([slice, slice, ...])
-
-# pytype: disable=unsupported-operands
-# pytype: disable=attribute-error
 
 _1dSignal = np.ndarray  # pylint: disable=invalid-name
 _NdSignal = Sequence[_1dSignal]
@@ -171,7 +172,7 @@ def hc_energy(hc_t: Sequence[_NdSignal]) -> Sequence[Sequence[float]]:
   # Middle frequencies, they need to be counted twice in the case of rfft
   #   detailed explanation here: https://dsp.stackexchange.com/a/67110
   h_i_real = hc_t[:, :, 1:half_len]
-  h_i_imag = hc_t[:, :, half_len + 1:]  # no need to use np.flip
+  h_i_imag = hc_t[:, :, half_len + 1:]  # no need to use np.flip for energy
   h_i = 2 * np.sum(np.power(h_i_real, 2) + np.power(h_i_imag, 2), axis=2)
 
   # Nyquist frequency
